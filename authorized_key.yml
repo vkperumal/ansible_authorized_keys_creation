@@ -1,0 +1,23 @@
+---
+
+- name: generate ssh key and push to all docker  nodes
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: generate the ssh key
+      shell: "ssh-keygen -t rsa -N '' -f ~/.ssh/id_rsa"
+    
+    - name: save the old authorized keys file incase of issues
+      shell: " cat ~/.ssh/authorized_keys >> ~/.ssh/authorized_keys.bak"
+
+    - name: fetch the ssh key
+      fetch:
+        src: "~/.ssh/id_rsa.pub"
+        dest: "~/id_rsa_{{ inventory_hostname }}.pub"
+        flat: yes
+
+    - name: copy the authorized key to nodes
+      authorized_key:
+        user: root
+        state: present
+        key: "{{ lookup('pipe','cat ~/id_rsa_*.pub') }}"
